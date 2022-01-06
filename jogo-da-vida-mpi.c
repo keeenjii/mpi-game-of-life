@@ -46,7 +46,8 @@ int nextGeneration(int **grid, int **newgrid, int rank){
             else if(grid[i][j] == 0 && vizinhos_vivos == 3)
                 newgrid[i][j] = 1;      
             else
-            newgrid[i][j] = grid[i][j] * 0;   
+                newgrid[i][j] = grid[i][j] * 0;   
+                
             total_vivos += newgrid[i][j]; 
         }
     }
@@ -131,7 +132,7 @@ int main(){
         local_alives = nextGeneration(grid, newgrid, rank);
         MPI_Reduce(&local_alives, &global_alives, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
         int **j = grid;
-        grid = newgrid;
+        grid = newgrid;eracao*2+1+modo
         newgrid = j;
         if(NUM_THREADS>1){
             message_exchange(grid, rank, 1, i);
@@ -154,7 +155,7 @@ int main(){
 
     free(grid);
     free(newgrid);
-    
+
     MPI_Finalize();
     return 0;
 }
