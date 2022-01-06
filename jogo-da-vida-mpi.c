@@ -64,24 +64,27 @@ int remanescente(int i, int j){
 }
 
 void message_exchange(int **grid, int rank, int modo, int geracao){
-    MPI_Request send_request, recv_request;
-    MPI_Status send_status, recv_status;
-    int recv_position, send_position, send_rank, recv_rank;
-    if(modo == 1){ 
-        recv_position = remanescente((N/NUM_THREADS)*rank-1, N);
-        send_position = (N/NUM_THREADS)*(rank+1)-1;
-        recv_rank = remanescente(rank-1, NUM_THREADS);
-        send_rank = remanescente(rank+1, NUM_THREADS);
-    } else {
-        recv_position = remanescente((N/NUM_THREADS)*(rank+1), N);
-        send_position = (N/NUM_THREADS)*rank;
-        recv_rank = remanescente(rank+1, NUM_THREADS);
-        send_rank = remanescente(rank-1, NUM_THREADS);
+    MPI_Request request_s, request_r;
+    MPI_Status status_s, status_r;
+    int position_r, position_s, rank_s, rank_r, neighbor_process;
+    if(modo == 0){ 
+        position_s = (N/NUM_THREADS)*(rank+1)-1;
+        position_r = remanescente((N/NUM_THREADS)*rank-1, N);
+        rank_s = remanescente(rank-1, NUM_THREADS);
+        rank_r = remanescente(rank-1, NUM_THREADS);
+    } else if (modo == 1 ){
+        position_s = (N/NUM_THREADS)*rank;
+        position_r = remanescente((N/NUM_THREADS)*(rank+1), N);
+        rank_s = remanescente(rank-1, NUM_THREADS);
+        rank_r = remanescente(rank+1, NUM_THREADS);
     }
-    MPI_Isend(grid[send_position], N, MPI_INT, send_rank, geracao*2+1+modo, MPI_COMM_WORLD, &send_request);
-    MPI_Irecv(grid[recv_position], N, MPI_INT, recv_rank, geracao*2+1+modo, MPI_COMM_WORLD, &recv_request);
-    MPI_Wait(&send_request, &send_status);
-    MPI_Wait(&recv_request,&recv_status);
+
+    neighbor_process = geracao*2+1+modo;
+
+    MPI_Isend(grid[position_s], N, MPI_INT, rank_s, neighbor_process, MPI_COMM_WORLD, &request_s);
+    MPI_Irecv(grid[position_r], N, MPI_INT, rank_r, neighbor_process, MPI_COMM_WORLD, &request_r);
+    MPI_Wait(&request_s, &status_s);
+    MPI_Wait(&request_r, &status_r);
 }
 
 int main(){
@@ -97,10 +100,11 @@ int main(){
         grid[i] = (int *) calloc(N, sizeof(int));
         newgrid[i] = (int *) calloc(N, sizeof(int));
     }
-    //
+    
     MPI_Comm_size(MPI_COMM_WORLD, &NUM_THREADS);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-// CONDICOES INICIAIS
+
+    // CONDICOES INICIAIS
     // Building Glider
     int lin = 1, col = 1;
     grid[lin  ][col+1] = 1;
@@ -117,7 +121,7 @@ int main(){
     grid[lin+1][col  ] = 1;
     grid[lin+1][col+1] = 1;
     grid[lin+2][col+1] = 1;
-////
+    ////
 
     if(rank == 0){
         time -= MPI_Wtime();
@@ -134,18 +138,23 @@ int main(){
             message_exchange(grid, rank, -1, i);
         }
     }
+
     MPI_Barrier(MPI_COMM_WORLD);
+
     if(rank == 0){
         printf("Células vivas na última geração: %d\n", global_alives);
         time = MPI_Wtime() - time;
         printf("Tempo decorrido na sessão paralela: %f\n", time);
     }
+
     for(int i = 0; i < N; i++){
         free(grid[i]);
         free(newgrid[i]);
     }
+
     free(grid);
     free(newgrid);
+    
     MPI_Finalize();
     return 0;
 }
