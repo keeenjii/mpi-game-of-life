@@ -68,12 +68,11 @@ void message_exchange(int **grid, int rank, int modo, int geracao){
     MPI_Request request_s, request_r;
     MPI_Status status_s, status_r;
     int position_r, position_s, rank_s, rank_r, neighbor_process;
-    //printf("\nModo: %d", modo);
     if(modo == 0){ 
         position_s = (N/NUM_THREADS)*(rank+1)-1;
         position_r = remanescente((N/NUM_THREADS)*rank-1, N);
-        rank_s = remanescente(rank-1, NUM_THREADS);
-        rank_r = remanescente(rank+1, NUM_THREADS);
+        rank_s = remanescente(rank+1, NUM_THREADS);
+        rank_r = remanescente(rank-1, NUM_THREADS);
     } else if (modo == 1 ){
         position_s = (N/NUM_THREADS)*rank;
         position_r = remanescente((N/NUM_THREADS)*(rank+1), N);
