@@ -47,7 +47,7 @@ int nextGeneration(int **grid, int **newgrid, int rank){
                 newgrid[i][j] = 1;      
             else
                 newgrid[i][j] = grid[i][j] * 0;   
-                
+
             total_vivos += newgrid[i][j]; 
         }
     }
@@ -68,11 +68,12 @@ void message_exchange(int **grid, int rank, int modo, int geracao){
     MPI_Request request_s, request_r;
     MPI_Status status_s, status_r;
     int position_r, position_s, rank_s, rank_r, neighbor_process;
+    //printf("\nModo: %d", modo);
     if(modo == 0){ 
         position_s = (N/NUM_THREADS)*(rank+1)-1;
         position_r = remanescente((N/NUM_THREADS)*rank-1, N);
         rank_s = remanescente(rank-1, NUM_THREADS);
-        rank_r = remanescente(rank-1, NUM_THREADS);
+        rank_r = remanescente(rank+1, NUM_THREADS);
     } else if (modo == 1 ){
         position_s = (N/NUM_THREADS)*rank;
         position_r = remanescente((N/NUM_THREADS)*(rank+1), N);
@@ -125,18 +126,24 @@ int main(){
     ////
 
     if(rank == 0){
+        
         time -= MPI_Wtime();
     }
 
     for(int i = 0; i<NUM_GER; i++){
         local_alives = nextGeneration(grid, newgrid, rank);
         MPI_Reduce(&local_alives, &global_alives, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        if(rank==0){
+            printf("Geracao %d: %d\n", i + 1, global_alives);
+        }
+
         int **j = grid;
-        grid = newgrid;eracao*2+1+modo
+        grid = newgrid;
         newgrid = j;
         if(NUM_THREADS>1){
+            message_exchange(grid, rank, 0, i);
             message_exchange(grid, rank, 1, i);
-            message_exchange(grid, rank, -1, i);
         }
     }
 
